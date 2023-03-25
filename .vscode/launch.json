@@ -27,7 +27,7 @@
             "type": "python",
             "request": "launch",
             "program": "send.py",
-            "args": ["127.0.0.1:8000","-m","test"],
+            "args": ["127.0.0.1:8000","-f","threebody.jpg"],
             "console": "integratedTerminal",
             "justMyCode": true
         }

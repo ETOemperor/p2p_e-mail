@@ -1,8 +1,14 @@
 #接收模块
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import json
- 
- 
+import time
+
+def base_file(filecode): #接收文件
+    filecode=filecode.split("!")
+    del filecode[0]
+    file_name="save/"+filecode[0]
+    print("receive file:%s" % file_name)
+    open(file_name, "wb").write(bytes(filecode[1],encoding="utf-8"))
 class Resquest(BaseHTTPRequestHandler):
     def handler(self):
         print("data:", self.rfile.readline().decode())
@@ -30,7 +36,11 @@ class Resquest(BaseHTTPRequestHandler):
         print(self.headers)
         print(self.command)
         req_datas = self.rfile.read(int(self.headers['content-length'])) #重点在此步!
-        print(req_datas.decode())
+        req_datas=str(req_datas, encoding='utf-8')
+        if req_datas[:5]=="file!":
+            base_file(req_datas)
+        else:
+            print(req_datas.decode())
         data = {
             'result_code': '2',
             'result_desc': 'Success',
@@ -46,5 +56,5 @@ class Resquest(BaseHTTPRequestHandler):
 if __name__ == '__main__':
     host = ('127.0.0.1', 8000)
     server = HTTPServer(host, Resquest)
-    print("监听%s端口" % host[1])
+    print("监听 %s 端口" % host[1])
     server.serve_forever()
