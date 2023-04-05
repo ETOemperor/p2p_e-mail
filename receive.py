@@ -1,60 +1,28 @@
-#接收模块
-from http.server import HTTPServer, BaseHTTPRequestHandler
-import json
-import time
+import http.server
+import socketserver
 
-def base_file(filecode): #接收文件
-    filecode=filecode.split("!")
-    del filecode[0]
-    file_name="save/"+filecode[0]
-    print("receive file:%s" % file_name)
-    open(file_name, "wb").write(bytes(filecode[1],encoding="utf-8"))
-class Resquest(BaseHTTPRequestHandler):
-    def handler(self):
-        print("data:", self.rfile.readline().decode())
-        self.wfile.write(self.rfile.readline())
- 
-    def do_GET(self):
-        print(self.requestline)
-        if self.path != '/hello':
-            self.send_error(404, "Page not Found!")
-            return
- 
-        data = {
-            'result_code': '1',
-            'result_desc': 'Success',
-            'timestamp': '',
-            'data': {'message_id': '25d55ad283aa400af464c76d713c07ad'}
-        }
-        self.send_response(200)
-        self.send_header('Content-type', 'application/json')
-        self.end_headers()
-        self.wfile.write(json.dumps(data).encode())
- 
- 
+PORT = 8000  # 服务器监听的端口号
+DIRECTORY = './savesave'  # 文件保存的目录
+
+class FileUploadHandler(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
-        print(self.headers)
-        print(self.command)
-        req_datas = self.rfile.read(int(self.headers['content-length'])) #重点在此步!
-        req_datas=str(req_datas, encoding='utf-8')
-        if req_datas[:5]=="file!":
-            base_file(req_datas)
+        content_length = int(self.headers.get('Content-Length', 0))
+        post_data = self.rfile.read(content_length)  # 读取POST请求中的数据
+        if self.path == '/upload':  # 如果请求的路径为/upload
+            file_len = int(self.headers['Content-Length'])  # 获取上传文件的大小
+            file_data = self.rfile.read(file_len)  # 读取上传文件的内容
+            with open(DIRECTORY + '/uploaded_file', 'wb') as f:
+                f.write(file_data)  # 将上传文件保存到本地
+            self.send_response(200)  # 返回200表示上传成功
+            self.end_headers()
+        elif self.path == '/message':  # 如果请求的路径为/message
+            message = post_data.decode('utf-8')  # 将POST请求中的数据解码为字符串
+            print('Received message:', message)  # 输出接收到的消息
+            self.send_response(200)  # 返回200表示接收成功
+            self.end_headers()
         else:
-            print(req_datas.decode())
-        data = {
-            'result_code': '2',
-            'result_desc': 'Success',
-            'timestamp': '',
-            'data': {'message_id': '25d55ad283aa400af464c76d713c07ad'}
-        }
-        self.send_response(200)
-        self.send_header('Content-type', 'application/json')
-        self.end_headers()
-        self.wfile.write(json.dumps(data).encode('utf-8'))
- 
- 
-if __name__ == '__main__':
-    host = ('127.0.0.1', 8000)
-    server = HTTPServer(host, Resquest)
-    print("监听 %s 端口" % host[1])
-    server.serve_forever()
+            http.server.SimpleHTTPRequestHandler.do_GET(self)
+
+httpd = socketserver.TCPServer(("", PORT), FileUploadHandler)  # 创建服务器
+print("Server running on port", PORT)
+httpd.serve_forever()  # 启动服务器
